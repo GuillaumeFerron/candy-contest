@@ -59,13 +59,17 @@
   var gui;
   var line, uniforms, font;
   var initAmplitude = 5.0
-  var displacementCoeff = 0.0001
+  var displacementCoeff = 1
   var frequency = 0.001
   var initialBevelThickness = 5
   var bevelThickness = initialBevelThickness
   var bevelSegments = 15
   var size = 100
   var phase = 0
+  var displacement = []
+  var displacementCount = 0
+  var prevPhase = null
+  var round = 0
 
   var loader = new THREE.FontLoader();
   loader.load( './fonts/helvetiker_bold.typeface.json', function ( _font ) {
@@ -147,7 +151,7 @@
 
     var customColor = new THREE.Float32BufferAttribute( count * 3, 3 );
     geometry.setAttribute( 'customColor', customColor );
-
+    geometry.computeBoundingBox()
     var color = new THREE.Color( 0xffffff );
 
     for ( var i = 0, l = customColor.count; i < l; i ++ ) {
@@ -181,32 +185,53 @@
   }
 
   function render() {
+    if(phase !== prevPhase) {
+      console.log('Phase ' + phase)
+      prevPhase = phase
+    }
+    if(line.rotation.y % 6.28 > 0 && line.rotation.y % 6.28 < 0.01) {
+      round++
+      console.log('Round ' + round)
+    }
     switch(phase) {
       case 0:
-      line.rotation.y += 0.005
-      if(line.rotation.y > 6.28 && line.rotation.y < 6.29) {
-        phase++
-      }
+      line.rotation.y += 0.01
+      if (round >= 0 && line.rotation.y % 6.28 > 0 && line.rotation.y % 6.28 < 0.01) phase++
       break
       case 1:
       render1()
-      if(bevelThickness > 2000) phase++
+      if (bevelThickness > 5000) phase++
       break
       case 2:
       render2()
-      if(bevelThickness <= initialBevelThickness * 2) phase++
+      if (bevelThickness <= initialBevelThickness * 2) phase++
       break
       case 3:
-      line.rotation.y += 0.005
-      if(line.rotation.y > 1.57 && line.rotation.y < 1.58) phase ++
+      line.rotation.y += 0.01
+      if (line.rotation.y % 6.28 > 1.57 && line.rotation.y % 6.28 < 1.58) phase ++
       break
       case 4:
-      line.rotation.y += 0.005
+      line.rotation.y += 0.01
       render3()
-      if(line.rotation.y > 3.14 && line.rotation.y < 3.15) phase ++
+      geometry.center();
+      if (line.rotation.y % 6.28 > 3.14 && line.rotation.y % 6.28 < 3.15) phase ++
+      break
       case 5:
-      // render4()
       line.rotation.y += 0.005
+      if (line.rotation.y % 6.28 > 4.71 && line.rotation.y % 6.28 < 4.72) phase ++
+      break
+      case 6:
+      render4()
+      line.rotation.y += 0.005
+      if (displacementCount === 0) phase ++
+      break
+      case 7:
+      line.rotation.y += 0.01
+      if (line.rotation.y % 6.28 > 0 && line.rotation.y % 6.28 < 0.01) phase ++
+      break
+      case 8:
+      phase = 0
+      round = 0
       default:
       break
     }
@@ -215,7 +240,7 @@
   }
 
   function render1() {
-    bevelThickness += 0.02 * bevelThickness
+    bevelThickness += 0.04 * bevelThickness
     geometry.dispose()
     scene.remove(line)
     renderGeometry()
@@ -223,7 +248,7 @@
   }
 
   function render2() {
-    bevelThickness -= 0.03 * bevelThickness
+    bevelThickness -= 0.05 * bevelThickness
     geometry.dispose()
     scene.remove(line)
     renderGeometry()
@@ -234,37 +259,31 @@
     var attributes = line.geometry.attributes;
     var array = attributes.displacement.array;
 
-    for ( var i = 0, l = array.length; i < l; i += 3 ) {
-
-      // array[ i ] += 50000 * displacementCoeff * (0.5 - Math.random());
-      // array[ i + 1 ] += 50000 * displacementCoeff * (0.5 - Math.random());
-      // array[ i + 2 ] += 50000 * displacementCoeff * (0.5 - Math.random());
-      // array[ i ] += displacementCoeff * 1 * i;
-      // array[ i + 1 ] += displacementCoeff * 1 * (i + 1);
-      // array[ i + 2 ] += displacementCoeff * 1 * (i + 2);
-      array[ i ] = (Math.floor((Math.random() * 2 + 1)) % 2) * -1 * Math.random() * 10
-      array[ i + 1 ] = (Math.floor((Math.random() * 2 + 1)) % 2) * -1 * Math.random() * 10
-      array[ i + 2 ] = (Math.floor((Math.random() * 2 + 1)) % 2) * -1 * Math.random() * 10
+    for ( var i = 0, l = array.length - 1; i < l; i += 3 ) {
+      if (!displacement[i]) displacement[i] = displacementCoeff * (0.5 - Math.random())
+      if (!displacement[i + 1]) displacement[i + 1] = displacementCoeff * (0.5 - Math.random())
+      if (!displacement[i + 2]) displacement[i + 2] = displacementCoeff * (0.5 - Math.random())
+      array[ i ] += displacement[i];
+      array[ i + 1 ] += displacement[i + 1];
+      array[ i + 2 ] += displacement[i + 2];
     }
 
     attributes.displacement.needsUpdate = true;
+    displacementCount++
   }
 
   function render4() {
-    // uniforms.amplitude.value = initAmplitude * Math.sin(time * 0.1);
-    uniforms.color.value.offsetHSL( 0.0005, 0, 0 );
-
     var attributes = line.geometry.attributes;
     var array = attributes.displacement.array;
 
     for ( var i = 0, l = array.length; i < l; i += 3 ) {
-
-      array[ i ] -= (i % 2) * -1 * displacementCoeff * i;
-      array[ i + 1 ] -= ((i + 1) % 2) * -1 * displacementCoeff * i;
-      array[ i + 2 ] -= ((i + 2) % 2) * -1 * displacementCoeff * i;
+      array[ i ] -= displacement[i];
+      array[ i + 1 ] -= displacement[i + 1];
+      array[ i + 2 ] -= displacement[i + 2];
     }
 
     attributes.displacement.needsUpdate = true;
+    displacementCount--
   }
 </script>
 
