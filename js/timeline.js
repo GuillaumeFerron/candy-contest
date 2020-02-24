@@ -27,7 +27,7 @@ export const render = () => {
       break
     case 1:
       _renderExpandBezel()
-      if (bevelThickness > 5000) phase++
+      if (bevelThickness > 10000) phase++
       break
     case 2:
       _renderShrinkBezel()
@@ -35,29 +35,19 @@ export const render = () => {
       break
     case 3:
       rotate()
+      _renderExplode()
+      geometry.center()
       if (isRotation(line.rotation.y, 1 / 2)) phase++
       break
     case 4:
-      rotate()
-      _renderExplode()
-      geometry.center()
-      if (isRotation(line.rotation.y, 1)) phase++
+      rotate(rotationFrequency / 2)
+      if (isRotation(line.rotation.y, 3 / 4)) phase++
       break
     case 5:
-      rotate(rotationFrequency / 2)
-      if (isRotation(line.rotation.y, 1 / 4)) phase++
-      break
-    case 6:
       _renderImplode()
       rotate(rotationFrequency / 2)
-      if (displacementCount === 0) phase++
+      if (displacementCount === 0) reset()
       break
-    case 7:
-      rotate()
-      if (isRotation(line.rotation.y, 1 / 2)) phase++
-      break
-    case 8:
-      reset()
     default:
       break
   }
@@ -82,7 +72,7 @@ const _renderExpandBezel = () => {
  * Shrinks the N
  */
 const _renderShrinkBezel = () => {
-  // U0 = 5000
+  // U0 = 10000
   // Un+1 = -Un * 0.05
   bevelThickness -= 0.05 * bevelThickness
   geometry.dispose()
