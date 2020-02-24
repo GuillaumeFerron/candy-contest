@@ -8,6 +8,9 @@ let round = 0
 const displacementCoeff = 1
 const rotationFrequency = 0.01
 
+/*
+ * Main animation timeline
+ */
 export const render = () => {
   if (phase !== prevPhase) {
     if (debug) console.log('Phase ' + phase)
@@ -54,8 +57,7 @@ export const render = () => {
       if (isRotation(line.rotation.y, 1 / 2)) phase++
       break
     case 8:
-      phase = 0
-      round = 0
+      reset()
     default:
       break
   }
@@ -63,7 +65,12 @@ export const render = () => {
   renderer.render(scene, camera)
 }
 
+/**
+ * Expands the N
+ */
 const _renderExpandBezel = () => {
+  // U0 = 5
+  // Un+1 = Un * 0.04
   bevelThickness += 0.04 * bevelThickness
   geometry.dispose()
   scene.remove(line)
@@ -71,7 +78,12 @@ const _renderExpandBezel = () => {
   geometry.center()
 }
 
+/**
+ * Shrinks the N
+ */
 const _renderShrinkBezel = () => {
+  // U0 = 5000
+  // Un+1 = -Un * 0.05
   bevelThickness -= 0.05 * bevelThickness
   geometry.dispose()
   scene.remove(line)
@@ -79,6 +91,9 @@ const _renderShrinkBezel = () => {
   geometry.center()
 }
 
+/**
+ * Make the displacements scatter
+ */
 const _renderExplode = () => {
   const attributes = line.geometry.attributes
   const array = attributes.displacement.array
@@ -96,6 +111,9 @@ const _renderExplode = () => {
   displacementCount++
 }
 
+/**
+ * Revert the displacements scattering
+ */
 const _renderImplode = () => {
   const attributes = line.geometry.attributes
   const array = attributes.displacement.array
@@ -110,6 +128,18 @@ const _renderImplode = () => {
   displacementCount--
 }
 
+/**
+ * Rotate the geometry
+ * @param integer val
+ */
 const rotate = (val = rotationFrequency) => {
   line.rotation.y += val
+}
+
+/**
+ * Reset the whole animation
+ */
+const reset = () => {
+  phase = 0
+  round = 0
 }

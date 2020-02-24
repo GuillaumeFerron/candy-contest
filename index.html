@@ -67,11 +67,14 @@
 </script>
 
 <script>
+  /**
+   * Reload the page with the proper debug parameter value
+   */
   const reloadDebug = () => { 
     if (!debug) {
-      window.location.href += `${window.location.href.indexOf('?') !== -1 ? '&' : '?'}debug=true`
+      window.location.href += `${window.location.search.length > 1 ? '&' : '?'}debug=true`
     } else {
-      window.location.href = window.location.origin
+      window.location.href = window.location.href.replace('?debug=true', '')
     }
   }
 </script>
