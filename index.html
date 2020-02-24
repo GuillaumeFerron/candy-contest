@@ -5,14 +5,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <link type="text/css" rel="stylesheet" href="./css/main.css">
-  <link data-n-head="true" rel="icon" type="image/x-icon" href="https://s3.ca-central-1.amazonaws.com/candydigital/images/favicon.ico">
+  <link data-n-head="true" rel="icon" type="image/x-icon"
+        href="https://s3.ca-central-1.amazonaws.com/candydigital/images/favicon.ico">
 </head>
 
 <body>
-  <div id="container"></div>
+<div id="container"></div>
+<div id="debug" class="enabled" onclick="reloadDebug()">?</div>
 
-  <script type="x-shader/x-vertex" id="vertexshader">
-
+<script type="x-shader/x-vertex" id="vertexshader">
     uniform float amplitude;
 
     attribute vec3 displacement;
@@ -21,271 +22,61 @@
     varying vec3 vColor;
 
     void main() {
-
-    vec3 newPosition = position + amplitude * displacement;
-
-    vColor = customColor;
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
-
-  }
+      vec3 newPosition = position + amplitude * displacement;
+      vColor = customColor;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
+    }
 
 </script>
 
 <script type="x-shader/x-fragment" id="fragmentshader">
+    uniform vec3 color;
+    uniform float opacity;
 
-  uniform vec3 color;
-  uniform float opacity;
+    varying vec3 vColor;
 
-  varying vec3 vColor;
-
-  void main() {
-
-  gl_FragColor = vec4( vColor * color, opacity );
-
-}
+    void main() {
+      gl_FragColor = vec4( vColor * color, opacity );
+    }
 
 </script>
 
-<script type="module">
+<script>
+  /********************************/
+  /*GLOBALLY ACCESSIBLE PARAMETERS*/
+  /********************************/
+  let debug = false
 
-  import * as THREE from '../vendor/three.module.js';
-  import { GUI } from './vendor/libs/dat.gui.module.js';
-  import { OrbitControls } from './vendor/controls/OrbitControls.js';
-  import Stats from './vendor/libs/stats.module.js';
+  /**
+   * Threejs variables
+   */
+  let renderer, scene, camera, stats, geometry, shaderMaterial
+  let line, uniforms, font
 
-  var renderer, scene, camera, stats, controls, geometry, shaderMaterial;
+  /**
+   * Geometry variables
+   */
+  const initialBevelThickness = 5
+  let bevelThickness = initialBevelThickness
+  
+  /**
+   * Timeline variables
+   */
+  let phase = 0
 
-  var gui;
-  var line, uniforms, font;
-  var initAmplitude = 5.0
-  var displacementCoeff = 1
-  var frequency = 0.001
-  var initialBevelThickness = 5
-  var bevelThickness = initialBevelThickness
-  var bevelSegments = 15
-  var size = 100
-  var phase = 0
-  var displacement = []
-  var displacementCount = 0
-  var prevPhase = null
-  var round = 0
+</script>
 
-  var loader = new THREE.FontLoader();
-  loader.load( './fonts/helvetiker_bold.typeface.json', function ( _font ) {
-    font = _font
-    init();
-    animate();
-
-  } );
-
-  function init() {
-
-    camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 10000 );
-    camera.position.z = 400;
-
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0x050505 );
-
-    uniforms = {
-
-      amplitude: { value: initAmplitude },
-      opacity: { value: 0.3 },
-      color: { value: new THREE.Color( 0xffffff ) }
-
-    };
-
-    shaderMaterial = new THREE.ShaderMaterial( {
-
-      uniforms: uniforms,
-      vertexShader: document.getElementById( 'vertexshader' ).textContent,
-      fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
-      blending: THREE.AdditiveBlending,
-      depthTest: false,
-      transparent: true
-
-    } );
-
-    renderGeometry()
-
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-
-    // controls = new OrbitControls( camera, renderer.domElement );
-    // controls.minDistance = 10;
-    // controls.maxDistance = 500;
-
-    var container = document.getElementById( 'container' );
-    container.appendChild( renderer.domElement );
-
-    stats = new Stats();
-    container.appendChild( stats.dom );
-
-
-    window.addEventListener( 'resize', onWindowResize, false );
-  }
-
-  function renderGeometry() {
-    geometry = new THREE.TextBufferGeometry( 'N', {
-
-      font: font,
-
-      size,
-      height: 15,
-      curveSegments: 10,
-
-      bevelThickness,
-      bevelSize: 0,
-      bevelEnabled: true,
-      bevelSegments,
-
-    } );
-
-    geometry.center();
-
-    var count = geometry.attributes.position.count;
-
-    var displacement = new THREE.Float32BufferAttribute( count * 3, 3 );
-    geometry.setAttribute( 'displacement', displacement );
-
-    var customColor = new THREE.Float32BufferAttribute( count * 3, 3 );
-    geometry.setAttribute( 'customColor', customColor );
-    geometry.computeBoundingBox()
-    var color = new THREE.Color( 0xffffff );
-
-    for ( var i = 0, l = customColor.count; i < l; i ++ ) {
-
-      color.setHSL( i / l, 0.5, 0.5 );
-      color.toArray( customColor.array, i * customColor.itemSize );
-
+<script>
+  const reloadDebug = () => { 
+    if (!debug) {
+      window.location.href += `${window.location.href.indexOf('?') !== -1 ? '&' : '?'}debug=true`
+    } else {
+      window.location.href = window.location.origin
     }
-
-    line = new THREE.Line( geometry, shaderMaterial );
-    line.rotation.x = 0;
-    scene.add( line );
-  }
-
-  function onWindowResize() {
-
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize( window.innerWidth, window.innerHeight );
-
-  }
-
-  function animate() {
-
-    requestAnimationFrame( animate );
-
-    render();
-    stats.update();
-
-  }
-
-  function render() {
-    if(phase !== prevPhase) {
-      console.log('Phase ' + phase)
-      prevPhase = phase
-    }
-    if(line.rotation.y % 6.28 > 0 && line.rotation.y % 6.28 < 0.01) {
-      round++
-      console.log('Round ' + round)
-    }
-    switch(phase) {
-      case 0:
-      line.rotation.y += 0.01
-      if (round >= 0 && line.rotation.y % 6.28 > 0 && line.rotation.y % 6.28 < 0.01) phase++
-      break
-      case 1:
-      render1()
-      if (bevelThickness > 5000) phase++
-      break
-      case 2:
-      render2()
-      if (bevelThickness <= initialBevelThickness * 2) phase++
-      break
-      case 3:
-      line.rotation.y += 0.01
-      if (line.rotation.y % 6.28 > 1.57 && line.rotation.y % 6.28 < 1.58) phase ++
-      break
-      case 4:
-      line.rotation.y += 0.01
-      render3()
-      geometry.center();
-      if (line.rotation.y % 6.28 > 3.14 && line.rotation.y % 6.28 < 3.15) phase ++
-      break
-      case 5:
-      line.rotation.y += 0.005
-      if (line.rotation.y % 6.28 > 4.71 && line.rotation.y % 6.28 < 4.72) phase ++
-      break
-      case 6:
-      render4()
-      line.rotation.y += 0.005
-      if (displacementCount === 0) phase ++
-      break
-      case 7:
-      line.rotation.y += 0.01
-      if (line.rotation.y % 6.28 > 0 && line.rotation.y % 6.28 < 0.01) phase ++
-      break
-      case 8:
-      phase = 0
-      round = 0
-      default:
-      break
-    }
-
-    renderer.render( scene, camera );
-  }
-
-  function render1() {
-    bevelThickness += 0.04 * bevelThickness
-    geometry.dispose()
-    scene.remove(line)
-    renderGeometry()
-    geometry.center();
-  }
-
-  function render2() {
-    bevelThickness -= 0.05 * bevelThickness
-    geometry.dispose()
-    scene.remove(line)
-    renderGeometry()
-    geometry.center();
-  }
-
-  function render3() {
-    var attributes = line.geometry.attributes;
-    var array = attributes.displacement.array;
-
-    for ( var i = 0, l = array.length - 1; i < l; i += 3 ) {
-      if (!displacement[i]) displacement[i] = displacementCoeff * (0.5 - Math.random())
-      if (!displacement[i + 1]) displacement[i + 1] = displacementCoeff * (0.5 - Math.random())
-      if (!displacement[i + 2]) displacement[i + 2] = displacementCoeff * (0.5 - Math.random())
-      array[ i ] += displacement[i];
-      array[ i + 1 ] += displacement[i + 1];
-      array[ i + 2 ] += displacement[i + 2];
-    }
-
-    attributes.displacement.needsUpdate = true;
-    displacementCount++
-  }
-
-  function render4() {
-    var attributes = line.geometry.attributes;
-    var array = attributes.displacement.array;
-
-    for ( var i = 0, l = array.length; i < l; i += 3 ) {
-      array[ i ] -= displacement[i];
-      array[ i + 1 ] -= displacement[i + 1];
-      array[ i + 2 ] -= displacement[i + 2];
-    }
-
-    attributes.displacement.needsUpdate = true;
-    displacementCount--
   }
 </script>
+
+<script type="module" src="./js/main.js"></script>
 
 </body>
 

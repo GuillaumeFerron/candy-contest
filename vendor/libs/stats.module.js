@@ -24,11 +24,11 @@ var Stats = function () {
 
 	}
 
-	function showPanel( id ) {
+	function showPanel( ...id ) {
 
 		for ( var i = 0; i < container.children.length; i ++ ) {
 
-			container.children[ i ].style.display = i === id ? 'block' : 'none';
+			container.children[ i ].style.display = id.indexOf(i) !== -1 ? 'block' : 'none';
 
 		}
 
@@ -49,7 +49,9 @@ var Stats = function () {
 
 	}
 
-	showPanel( 0 );
+	var customPanel = addPanel( new Stats.Panel( 'PHASE', '#fff76e', '#020' ) );
+
+	showPanel( 0, 1, 2, 3 );
 
 	return {
 
@@ -89,6 +91,8 @@ var Stats = function () {
 				}
 
 			}
+
+			customPanel.update(phase, 10)
 
 			return time;
 
