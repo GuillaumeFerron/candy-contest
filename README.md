@@ -1,6 +1,6 @@
 # Candy Digital / Banners - Contest February 2020
 
-!Letter N](https://raw.githubusercontent.com/GuillaumeFerron/candy-contest/master/letter_n.gif)
+![Letter N](https://raw.githubusercontent.com/GuillaumeFerron/candy-contest/master/letter_n.gif)
 
 ## Letter
 ### N
